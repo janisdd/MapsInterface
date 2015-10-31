@@ -14,15 +14,12 @@ map.pre_init(() => {
 
   var host = document.getElementById("map-canvas");
 
-  map.init(host, {lat: 51.49662772523053, lng: 11.93737506866455}, 16);
+  map.init(host, {lat: 50.49662772523053, lng: 10.93737506866455}, 16);
 
-  var obenLinks: LatLng = { lat: 51.50562772523053, lng: 11.92037506866455 };
-  var untenRechts: LatLng = { lat: 51.47962772523053, lng: 11.97037506866455 };
-  //var obenLinks: LatLng = { lat: 51, lng: 11 };
-  //var untenRechts: LatLng = { lat: 52, lng: 10 };
+  var obenLinks: LatLng = { lat: 50.50562772523053, lng: 10.92037506866455 };
+  var untenRechts: LatLng = { lat: 50.47962772523053, lng: 10.97037506866455 };
 
   var anzahl = 5;
-
 
   for (let i = 0; i < anzahl; i++) {
 
