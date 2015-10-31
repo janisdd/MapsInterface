@@ -8,8 +8,16 @@ var cross = "Images/x.png"
 var dot = "Images/dot.png"
 var dot2 = "Images/dot2.png"
 
+var minMarkers = 2
+var maxMarkers = 10
+
+var delay = 3000
+var drawrCrosses = false
+var drawSector = false
+
 interface Cluster {
 
+  node: QuadTreeNode
   markers: Marker[]
 
 }
@@ -29,7 +37,7 @@ interface QuadTreeNode {
 class Clusterer {
 
 
-  getClusters(markers: Marker[]) : Cluster[] {
+  getClusters(markers: Marker[], maxDepth: number) : Cluster[] {
 
     var viewPort = this.getViewPort(markers)
 
@@ -40,31 +48,93 @@ class Clusterer {
       subNodes: []
     }
 
-    this.createQuadTree(viewPort, markers, root)
+    //create the quadtree
+    this.createQuadTree(viewPort, markers, root, maxDepth)
 
-    return null;
 
-    for (let i = 0; i < root.subNodes[0].markers.length; i++) {
-        let marker = root.subNodes[0].markers[i];
-        marker.setIconPath(img0)
+    //if 2 or more markers are in one quadtree node --> create cluster
+    var clusters: Cluster[] = []
+
+    this.getClustersRec(root, clusters)
+
+    var self = this
+
+setTimeout(function() {
+
+  for (var i = 0; i < clusters.length; i++) {
+      let cluster: Cluster = clusters[i];
+
+      console.log(cluster)
+
+      //create a new marker for the cluster(marker)
+
+      let _viewPort = self.getViewPort(cluster.markers)
+
+      let centerX = _viewPort.topLeft.lng + ((_viewPort.bottomRight.lng - _viewPort.topLeft.lng) / 2)
+      let centerY = _viewPort.bottomRight.lat + ((_viewPort.topLeft.lat - _viewPort.bottomRight.lat) / 2)
+
+      let clusterMarker = map.addMarkerFromGeoLocation({
+        lat: centerY,
+        lng: centerX
+      }, dot)
+
+      map.addMarkerListener(GoogleMapsEventNames.click, clusterMarker, (marker: GoogleMapsMarker, ...originalArgs: any[]) => {
+
+        clusterMarker.setVisibility(false)
+
+        for (let j = 0; j < cluster.markers.length; j++) {
+            let marker: Marker = cluster.markers[j];
+            marker.setVisibility(true)
+        }
+
+        setTimeout(() => {
+
+          clusterMarker.setVisibility(true)
+
+          for (let l = 0; l < cluster.markers.length; l++) {
+              let marker: Marker = cluster.markers[l];
+              marker.setVisibility(false)
+          }
+
+        }, 2000)
+
+
+      })
+
+      //hide all markers in this cluster
+      for (let n = 0; n < cluster.markers.length; n++) {
+          let marker: Marker = cluster.markers[n];
+          marker.setVisibility(false)
+      }
+  }
+}, 2000)
+
+
+
+    return clusters;
+  }
+
+  private getClustersRec(root: QuadTreeNode, clusters: Cluster[]) {
+
+    for (let i = 0; i < root.subNodes.length; i++) {
+        var subNode: QuadTreeNode = root.subNodes[i];
+
+        if (subNode.markers.length >= minMarkers && subNode.markers.length <= maxMarkers) {
+          var cluster: Cluster = {
+            node: subNode,
+            markers: subNode.markers
+          }
+
+          clusters.push(cluster)
+
+        } else {
+
+          this.getClustersRec(subNode, clusters)
+
+        }
     }
 
-    for (let i = 0; i < root.subNodes[1].markers.length; i++) {
-        let marker = root.subNodes[1].markers[i];
-        marker.setIconPath(img1)
-    }
 
-    for (let i = 0; i < root.subNodes[2].markers.length; i++) {
-        let marker = root.subNodes[2].markers[i];
-        marker.setIconPath(img2)
-    }
-
-    for (let i = 0; i < root.subNodes[3].markers.length; i++) {
-        let marker = root.subNodes[3].markers[i];
-        marker.setIconPath(img3)
-    }
-
-    return null;
   }
 
 
@@ -102,12 +172,17 @@ class Clusterer {
   }
 
 
-  private createQuadTree(viewport: ViewPort, markers: Marker[], root: QuadTreeNode) {
+  private createQuadTree(viewport: ViewPort, markers: Marker[], root: QuadTreeNode, maxDepth: number) {
 
-    if (root.level > 5) {
+    var self = this
+
+    if (root.level > maxDepth) {
       console.log("hit")
       return
     }
+
+    //root.markers = []
+
 
     var child0 : QuadTreeNode = { //top left
       parentNode: root,
@@ -151,7 +226,9 @@ class Clusterer {
     var centerX = viewport.topLeft.lng + ((viewport.bottomRight.lng - viewport.topLeft.lng) / 2)
     var centerY = viewport.bottomRight.lat + ((viewport.topLeft.lat - viewport.bottomRight.lat) / 2)
 
-    map.addMarkerFromGeoLocation({lat: centerY, lng: centerX}, cross, true, null)
+    console.log("lng: " + centerX + " lat: " + centerY)
+    if (drawrCrosses)
+      map.addMarkerFromGeoLocation({lat: centerY, lng: centerX}, cross, true, null)
 
     for (let i = 0; i < markers.length; i++) {
         let marker = markers[i];
@@ -162,12 +239,12 @@ class Clusterer {
           if (location.lng <= centerX) { //left side
               child0.markers.push(marker)
           } else { //location.lng > centerY //right side
-              child2.markers.push(marker)
+              child0.markers.push(marker)
           }
 
         } else { //location.lat <= centerX //bottom side
           if (location.lng <= centerX) { //left side
-              child1.markers.push(marker)
+              child2.markers.push(marker)
           } else { //location.lng > centerY //right side
             child3.markers.push(marker)
           }
@@ -176,12 +253,13 @@ class Clusterer {
 
     //next level
 
+if (drawSector)
     for (let i = 0; i <child0.markers.length; i++) {
       let marker = child0.markers[i];
       marker.setIconPath(img0)
     }
-    
-    if (child0.markers.length > 1) { //top left
+
+    if (child0.markers.length > maxMarkers) { //top left
 
       let subViewPort: ViewPort = {
         topLeft: viewport.topLeft,
@@ -192,16 +270,18 @@ class Clusterer {
       }
 
 
-
-      this.createQuadTree(subViewPort, child0.markers, child0)
+      //setTimeout(function() {
+          self.createQuadTree(subViewPort, child0.markers, child0, maxDepth)
+      //}, delay)
     }
 
+if (drawSector)
     for (let i = 0; i <child1.markers.length; i++) {
       let marker = child1.markers[i];
       marker.setIconPath(img1)
     }
 
-    if (child1.markers.length > 1) { //top right
+    if (child1.markers.length > maxMarkers) { //top right
 
       let subViewPort: ViewPort = {
         topLeft: {
@@ -214,17 +294,18 @@ class Clusterer {
         }
       }
 
-
-
-      this.createQuadTree(subViewPort, child1.markers, child1)
+      //setTimeout(function() {
+          self.createQuadTree(subViewPort, child1.markers, child1, maxDepth)
+      //}, delay)
     }
 
+if (drawSector)
     for (let i = 0; i <child2.markers.length; i++) {
       let marker = child2.markers[i];
       marker.setIconPath(img2)
     }
 
-    if (child2.markers.length > 1) { //bottom left
+    if (child2.markers.length > maxMarkers) { //bottom left
 
       let subViewPort: ViewPort = {
         topLeft: {
@@ -237,18 +318,21 @@ class Clusterer {
         }
       }
 
+      //setTimeout(function() {
+          self.createQuadTree(subViewPort, child2.markers, child2, maxDepth)
+      //}, delay)
 
 
-      this.createQuadTree(subViewPort, child2.markers, child2)
     }
 
 
+if (drawSector)
     for (let i = 0; i <child3.markers.length; i++) {
       let marker = child3.markers[i];
       marker.setIconPath(img3)
     }
 
-    if (child3.markers.length > 1) { //bottom right
+    if (child3.markers.length >  maxMarkers) { //bottom right
 
       let subViewPort: ViewPort = {
         topLeft: {
@@ -261,9 +345,9 @@ class Clusterer {
       //map.addMarkerFromGeoLocation(subViewPort.topLeft, dot, true, null)
       //map.addMarkerFromGeoLocation(subViewPort.bottomRight, dot2, true, null)
 
-
-
-      this.createQuadTree(subViewPort, child3.markers, child3)
+      //setTimeout(function() {
+          self.createQuadTree(subViewPort, child3.markers, child2, maxDepth)
+      //}, delay)
     }
   }
 

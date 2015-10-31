@@ -14,13 +14,13 @@ map.pre_init(() => {
 
   var host = document.getElementById("map-canvas");
 
-  map.init(host, {lat: 50.49662772523053, lng: 10.93737506866455}, 16);
+  map.init(host, {lat: 50.49662772523053, lng: 11.03737506866455}, 14);
 
-  var obenLinks: LatLng = { lat: 50.50562772523053, lng: 10.92037506866455 };
+  var obenLinks: LatLng = { lat: 50.50562772523053, lng: 11.12037506866455 };
   var untenRechts: LatLng = { lat: 50.47962772523053, lng: 10.97037506866455 };
 
 
-  var anzahl = 5;
+
   var locations = [
     {
       lat: 50.4839756647083,
@@ -44,14 +44,16 @@ map.pre_init(() => {
     },
   ]
 
+  var anzahl = 100;
+
   for (let i = 0; i < anzahl; i++) {
 
-/*
+
     var tempGeoLocation : LatLng = {
       lat: rndGoogle(obenLinks.lat, untenRechts.lat),
       lng: rndGoogle(obenLinks.lng, untenRechts.lng)
-    };*/
-    var tempGeoLocation = locations[i]
+    };
+    //var tempGeoLocation = locations[i]
 
      var marker1 = map.addMarkerFromGeoLocation(tempGeoLocation);
      markers.push(marker1);
@@ -69,14 +71,12 @@ map.pre_init(() => {
 
 
 
-
-
 //TODO add cluster to map
 //var clusters = clusterer.getClusters(markers)
 
 
 function getCluster() {
-  var clusters = clusterer.getClusters(markers)
+  var clusters = clusterer.getClusters(markers, 20)
 
 }
 
