@@ -4,6 +4,10 @@ var img1 = "Images/1.png"
 var img2 = "Images/2.png"
 var img3 = "Images/3.png"
 
+var cross = "Images/x.png"
+var dot = "Images/dot.png"
+var dot2 = "Images/dot2.png"
+
 interface Cluster {
 
   markers: Marker[]
@@ -80,13 +84,13 @@ class Clusterer {
 
         var locaiton = marker.getLocation()
 
-        if (locaiton.lat < viewPort.topLeft.lat)
+        if (locaiton.lat > viewPort.topLeft.lat)
           viewPort.topLeft.lat = locaiton.lat
 
         if (locaiton.lng < viewPort.topLeft.lng)
           viewPort.topLeft.lng = locaiton.lng
 
-        if (locaiton.lat > viewPort.bottomRight.lat)
+        if (locaiton.lat < viewPort.bottomRight.lat)
           viewPort.bottomRight.lat = locaiton.lat
 
         if (locaiton.lng > viewPort.bottomRight.lng)
@@ -99,6 +103,11 @@ class Clusterer {
 
 
   private createQuadTree(viewport: ViewPort, markers: Marker[], root: QuadTreeNode) {
+
+    if (root.level > 5) {
+      console.log("hit")
+      return
+    }
 
     var child0 : QuadTreeNode = { //top left
       parentNode: root,
@@ -142,7 +151,7 @@ class Clusterer {
     var centerX = viewport.topLeft.lng + ((viewport.bottomRight.lng - viewport.topLeft.lng) / 2)
     var centerY = viewport.bottomRight.lat + ((viewport.topLeft.lat - viewport.bottomRight.lat) / 2)
 
-    map.addMarkerFromGeoLocation({lat: centerY, lng: centerX}, img0, true, null)
+    map.addMarkerFromGeoLocation({lat: centerY, lng: centerX}, cross, true, null)
 
     for (let i = 0; i < markers.length; i++) {
         let marker = markers[i];
@@ -167,80 +176,92 @@ class Clusterer {
 
     //next level
 
+    for (let i = 0; i <child0.markers.length; i++) {
+      let marker = child0.markers[i];
+      marker.setIconPath(img0)
+    }
+    
     if (child0.markers.length > 1) { //top left
 
       let subViewPort: ViewPort = {
         topLeft: viewport.topLeft,
         bottomRight: {
-          lat: centerX,
-          lng: centerY
+          lat: centerY,
+          lng: centerX
         }
       }
 
-      for (let i = 0; i <child0.markers.length; i++) {
-        let marker = child0.markers[i];
-        marker.setIconPath(img0)
-      }
+
 
       this.createQuadTree(subViewPort, child0.markers, child0)
+    }
+
+    for (let i = 0; i <child1.markers.length; i++) {
+      let marker = child1.markers[i];
+      marker.setIconPath(img1)
     }
 
     if (child1.markers.length > 1) { //top right
 
       let subViewPort: ViewPort = {
         topLeft: {
-          lat: centerX,
-          lng: viewport.topLeft.lng
+          lat: viewport.topLeft.lat,
+          lng: centerX
         },
         bottomRight: {
-          lat: viewport.bottomRight.lat,
-          lng: centerY
+          lat: centerY,
+          lng: viewport.bottomRight.lng
         }
       }
 
-      for (let i = 0; i <child1.markers.length; i++) {
-        let marker = child1.markers[i];
-        marker.setIconPath(img1)
-      }
+
 
       this.createQuadTree(subViewPort, child1.markers, child1)
+    }
+
+    for (let i = 0; i <child2.markers.length; i++) {
+      let marker = child2.markers[i];
+      marker.setIconPath(img2)
     }
 
     if (child2.markers.length > 1) { //bottom left
 
       let subViewPort: ViewPort = {
         topLeft: {
-          lat: viewport.topLeft.lat,
-          lng: centerY
+          lat: centerY,
+          lng: viewport.topLeft.lng
         },
         bottomRight: {
-          lat: centerX,
-          lng: viewport.bottomRight.lng
+          lat: viewport.bottomRight.lat,
+          lng: centerX
         }
       }
 
-      for (let i = 0; i <child2.markers.length; i++) {
-        let marker = child2.markers[i];
-        marker.setIconPath(img2)
-      }
+
 
       this.createQuadTree(subViewPort, child2.markers, child2)
+    }
+
+
+    for (let i = 0; i <child3.markers.length; i++) {
+      let marker = child3.markers[i];
+      marker.setIconPath(img3)
     }
 
     if (child3.markers.length > 1) { //bottom right
 
       let subViewPort: ViewPort = {
         topLeft: {
-          lat: centerX,
-          lng: centerY
+          lat: centerY,
+          lng: centerX
         },
         bottomRight: viewport.bottomRight
       }
 
-      for (let i = 0; i <child3.markers.length; i++) {
-        let marker = child3.markers[i];
-        marker.setIconPath(img3)
-      }
+      //map.addMarkerFromGeoLocation(subViewPort.topLeft, dot, true, null)
+      //map.addMarkerFromGeoLocation(subViewPort.bottomRight, dot2, true, null)
+
+
 
       this.createQuadTree(subViewPort, child3.markers, child3)
     }

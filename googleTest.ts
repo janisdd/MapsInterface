@@ -19,14 +19,39 @@ map.pre_init(() => {
   var obenLinks: LatLng = { lat: 50.50562772523053, lng: 10.92037506866455 };
   var untenRechts: LatLng = { lat: 50.47962772523053, lng: 10.97037506866455 };
 
+
   var anzahl = 5;
+  var locations = [
+    {
+      lat: 50.4839756647083,
+      lng: 10.962649659642018
+    },
+    {
+      lat: 50.49510237306636,
+      lng: 10.923335840603801
+    },
+    {
+      lat: 50.49103326032916,
+      lng: 10.95574306983454
+    },
+    {
+      lat: 50.48729000576679,
+      lng: 10.95061600660393
+    },
+    {
+      lat: 50.480521859453525,
+      lng: 10.92312496882351
+    },
+  ]
 
   for (let i = 0; i < anzahl; i++) {
 
+/*
     var tempGeoLocation : LatLng = {
       lat: rndGoogle(obenLinks.lat, untenRechts.lat),
       lng: rndGoogle(obenLinks.lng, untenRechts.lng)
-    };
+    };*/
+    var tempGeoLocation = locations[i]
 
      var marker1 = map.addMarkerFromGeoLocation(tempGeoLocation);
      markers.push(marker1);
@@ -41,6 +66,9 @@ map.pre_init(() => {
 
   }
 });
+
+
+
 
 
 //TODO add cluster to map
