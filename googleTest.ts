@@ -49,7 +49,7 @@ map.pre_init(() => {
 //TODO add cluster to map
 //var clusters = clusterer.getClusters(markers)
 
- 
+
 function getCluster() {
   var clusters = clusterer.getClusters(markers)
 

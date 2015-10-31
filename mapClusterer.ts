@@ -1,4 +1,9 @@
 
+var img0 = "Images/0.png"
+var img1 = "Images/1.png"
+var img2 = "Images/2.png"
+var img3 = "Images/3.png"
+
 interface Cluster {
 
   markers: Marker[]
@@ -37,22 +42,22 @@ class Clusterer {
 
     for (let i = 0; i < root.subNodes[0].markers.length; i++) {
         let marker = root.subNodes[0].markers[i];
-        marker.setIconPath("http://icons.iconarchive.com/icons/fasticon/art-toys/32/Fire-Toy-icon.png")
+        marker.setIconPath(img0)
     }
 
     for (let i = 0; i < root.subNodes[1].markers.length; i++) {
         let marker = root.subNodes[1].markers[i];
-        marker.setIconPath("http://icons.iconarchive.com/icons/fasticon/art-toys/32/Green-Toy-icon.png")
+        marker.setIconPath(img1)
     }
 
     for (let i = 0; i < root.subNodes[2].markers.length; i++) {
         let marker = root.subNodes[2].markers[i];
-        marker.setIconPath("http://icons.iconarchive.com/icons/fasticon/art-toys/32/Ninja-Toy-icon.png")
+        marker.setIconPath(img2)
     }
 
     for (let i = 0; i < root.subNodes[3].markers.length; i++) {
         let marker = root.subNodes[3].markers[i];
-        marker.setIconPath("http://icons.iconarchive.com/icons/fasticon/art-toys/32/Blue-Toy-icon.png")
+        marker.setIconPath(img3)
     }
 
     return null;
@@ -137,7 +142,7 @@ class Clusterer {
     var centerX = viewport.topLeft.lng + ((viewport.bottomRight.lng - viewport.topLeft.lng) / 2)
     var centerY = viewport.bottomRight.lat + ((viewport.topLeft.lat - viewport.bottomRight.lat) / 2)
 
-    map.addMarkerFromGeoLocation({lat: centerY, lng: centerX}, "http://icons.iconarchive.com/icons/fasticon/art-toys/32/Pink-Toy-icon.png", true, null)
+    map.addMarkerFromGeoLocation({lat: centerY, lng: centerX}, img0, true, null)
 
     for (let i = 0; i < markers.length; i++) {
         let marker = markers[i];
@@ -174,7 +179,7 @@ class Clusterer {
 
       for (let i = 0; i <child0.markers.length; i++) {
         let marker = child0.markers[i];
-        marker.setIconPath("http://icons.iconarchive.com/icons/fasticon/art-toys/32/Fire-Toy-icon.png")
+        marker.setIconPath(img0)
       }
 
       this.createQuadTree(subViewPort, child0.markers, child0)
@@ -195,7 +200,7 @@ class Clusterer {
 
       for (let i = 0; i <child1.markers.length; i++) {
         let marker = child1.markers[i];
-        marker.setIconPath("http://icons.iconarchive.com/icons/fasticon/art-toys/32/Green-Toy-icon.png")
+        marker.setIconPath(img1)
       }
 
       this.createQuadTree(subViewPort, child1.markers, child1)
@@ -216,7 +221,7 @@ class Clusterer {
 
       for (let i = 0; i <child2.markers.length; i++) {
         let marker = child2.markers[i];
-        marker.setIconPath("http://icons.iconarchive.com/icons/fasticon/art-toys/32/Ninja-Toy-icon.png")
+        marker.setIconPath(img2)
       }
 
       this.createQuadTree(subViewPort, child2.markers, child2)
@@ -234,7 +239,7 @@ class Clusterer {
 
       for (let i = 0; i <child3.markers.length; i++) {
         let marker = child3.markers[i];
-        marker.setIconPath("http://icons.iconarchive.com/icons/fasticon/art-toys/32/Blue-Toy-icon.png")
+        marker.setIconPath(img3)
       }
 
       this.createQuadTree(subViewPort, child3.markers, child3)
