@@ -1,5 +1,6 @@
-//autor janis dähne
 /// <reference path="./mapClusterer.ts"/>
+//autor janis dähne
+//zuletzt bearbeitet von janis dähne: clusterer test hinzugefügt
 
 var markers: Array<GoogleMapsMarker> = [];
 
@@ -76,7 +77,11 @@ map.pre_init(() => {
 
 
 function getCluster() {
-  var clusters = clusterer.getClusters(markers, 20)
+
+  Clusterer.map = map
+  var clusters = Clusterer.getClusters(markers)
+
+  test(clusters)
 
 }
 
@@ -90,3 +95,63 @@ function setTextGoogle(text: string) {
 function rndGoogle(min:number, max:number) {
   return Math.random() * (max - min) + min;
 }
+
+var tempClusterMarkers: Marker[] = []
+
+function test(clusters: Cluster[]) {
+
+    var delay = 3000
+    setTimeout(function() {
+
+      for (var i = 0; i < clusters.length; i++) {
+          let cluster: Cluster = clusters[i];
+
+          console.log(cluster)
+
+          //create a new marker for the cluster(marker)
+
+          //let _viewPort = Clusterer.getViewPort(cluster.markers)
+
+          // map.addMarkerFromGeoLocation(_viewPort.bottomRight, dot2)
+          //map.addMarkerFromGeoLocation(_viewPort.topLeft, dot2)
+
+          //let centerX = _viewPort.topLeft.lng + ((_viewPort.bottomRight.lng - _viewPort.topLeft.lng) / 2)
+          //let centerY = _viewPort.bottomRight.lat + ((_viewPort.topLeft.lat - _viewPort.bottomRight.lat) / 2)
+
+          let clusterMarker = map.addMarkerFromGeoLocation(cluster.center, dot)
+
+          tempClusterMarkers.push(clusterMarker)
+
+          map.addMarkerListener(GoogleMapsEventNames.click, clusterMarker, (marker: GoogleMapsMarker, ...originalArgs: any[]) => {
+
+            clusterMarker.setVisibility(false)
+
+            for (let j = 0; j < cluster.markers.length; j++) {
+                let marker: Marker = cluster.markers[j];
+                marker.setVisibility(true)
+            }
+
+            setTimeout(() => {
+
+              clusterMarker.setVisibility(true)
+
+              for (let l = 0; l < cluster.markers.length; l++) {
+                  let marker: Marker = cluster.markers[l];
+                  marker.setVisibility(false)
+              }
+
+            }, delay)
+
+
+          })
+
+          //hide all markers in this cluster
+          for (let n = 0; n < cluster.markers.length; n++) {
+              let marker: Marker = cluster.markers[n];
+              marker.setVisibility(false)
+          }
+      }
+    }, delay)
+
+
+  }

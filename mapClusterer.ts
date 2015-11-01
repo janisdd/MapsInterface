@@ -1,3 +1,4 @@
+//autor janis dähne
 
 var img0 = "Images/0.png"
 var img1 = "Images/1.png"
@@ -8,38 +9,95 @@ var cross = "Images/x.png"
 var dot = "Images/dot.png"
 var dot2 = "Images/dot2.png"
 
-var minMarkers = 2
-var maxMarkers = 10
-
-var delay = 3000
-var drawrCrosses = false
-var drawSector = false
-
+/**
+ * a cluster with markers
+ */
 interface Cluster {
 
-  node: QuadTreeNode
-  markers: Marker[]
+  /**
+  * the center (half of the distance between the top left and bottom right marker)
+  */
+  center: LatLng
 
+  /**
+  * the marker to calculate the distance
+  */
+  originMarker: Marker
+
+  markers: Marker[]
 }
 
+/**
+ * a marker pair with a marker and a quadtree node
+ */
+interface MarkerPair {
+  marker: Marker
+  x: number
+  y: number
+  index: number
+  node: QuadTreeNode
+}
+
+/**
+ * a rectangular area
+ */
 interface ViewPort {
     topLeft: LatLng
     bottomRight: LatLng
 }
 
+/**
+ * a quadtree node with 4 sub nodes a parent and markers and a level
+ */
 interface QuadTreeNode {
   parentNode: QuadTreeNode
-  markers: Marker[]
-  level: number,
+  markers: MarkerPair[]
+  level: number
   subNodes: QuadTreeNode[]
 }
 
+
+/**
+ * the clusterer
+ */
 class Clusterer {
 
+  static delay = 3000
+  static drawrCrosses = false
+  static drawSector = false
 
-  getClusters(markers: Marker[], maxDepth: number) : Cluster[] {
+  static drawClusterOrigin = true
+  static map: GeoMap = null
 
-    var viewPort = this.getViewPort(markers)
+  //max distance between 2 marker where the 2 markers still belong to the same cluster
+  // distance < maxDistanceForCluster -> same cluster
+  /**
+  * the max distance a other marker can be distant from the initial cluster marker
+  * in order to be added to the same cluster
+  */
+  static maxDistanceForCluster = 100
+
+    /**
+     * returns a list of clusters for the given markers
+     * @param markers the markers to cluster with
+     * @returns {Cluster[]} the built clusters
+     */
+  static getClusters(markers: Marker[]) : Cluster[] {
+
+    var viewPort = Clusterer.getViewPort(markers)
+
+    var pairs : MarkerPair[] = []
+    for (let i = 0; i < markers.length; i++) {
+        let marker = markers[i];
+        let p = marker.getXY()
+        pairs.push({
+          marker: marker,
+          x: p.x,
+          y: p.y,
+          index: i,
+          node: null
+        })
+    }
 
     var root: QuadTreeNode = {
       parentNode: null,
@@ -48,97 +106,123 @@ class Clusterer {
       subNodes: []
     }
 
-    //create the quadtree
-    this.createQuadTree(viewPort, markers, root, maxDepth)
+    Clusterer.createQuadTree(viewPort, pairs, root)
 
-
-    //if 2 or more markers are in one quadtree node --> create cluster
-    var clusters: Cluster[] = []
-
-    this.getClustersRec(root, clusters)
-
-    var self = this
-
-setTimeout(function() {
-
-  for (var i = 0; i < clusters.length; i++) {
-      let cluster: Cluster = clusters[i];
-
-      console.log(cluster)
-
-      //create a new marker for the cluster(marker)
-
-      let _viewPort = self.getViewPort(cluster.markers)
-
-      let centerX = _viewPort.topLeft.lng + ((_viewPort.bottomRight.lng - _viewPort.topLeft.lng) / 2)
-      let centerY = _viewPort.bottomRight.lat + ((_viewPort.topLeft.lat - _viewPort.bottomRight.lat) / 2)
-
-      let clusterMarker = map.addMarkerFromGeoLocation({
-        lat: centerY,
-        lng: centerX
-      }, dot)
-
-      map.addMarkerListener(GoogleMapsEventNames.click, clusterMarker, (marker: GoogleMapsMarker, ...originalArgs: any[]) => {
-
-        clusterMarker.setVisibility(false)
-
-        for (let j = 0; j < cluster.markers.length; j++) {
-            let marker: Marker = cluster.markers[j];
-            marker.setVisibility(true)
-        }
-
-        setTimeout(() => {
-
-          clusterMarker.setVisibility(true)
-
-          for (let l = 0; l < cluster.markers.length; l++) {
-              let marker: Marker = cluster.markers[l];
-              marker.setVisibility(false)
-          }
-
-        }, 2000)
-
-
-      })
-
-      //hide all markers in this cluster
-      for (let n = 0; n < cluster.markers.length; n++) {
-          let marker: Marker = cluster.markers[n];
-          marker.setVisibility(false)
-      }
-  }
-}, 2000)
-
-
+    var clusters = Clusterer.getClustersFromPairs(pairs)
 
     return clusters;
   }
 
-  private getClustersRec(root: QuadTreeNode, clusters: Cluster[]) {
+    /**
+     * gets a list of clusters for the given marker pairs
+     * @param pairs all marker pairs to build clusters with
+     * @returns {Cluster[]} the list of clusters
+     */
+  private static getClustersFromPairs(pairs: MarkerPair[]): Cluster[] {
 
-    for (let i = 0; i < root.subNodes.length; i++) {
-        var subNode: QuadTreeNode = root.subNodes[i];
+    var clusters: Cluster[] = []
+    //start building clusters by starting with the highest depth
+    var sortedPairs = pairs.sort((a: MarkerPair, b: MarkerPair) => {
+      return b.node.level - a.node.level
+    })
 
-        if (subNode.markers.length >= minMarkers && subNode.markers.length <= maxMarkers) {
-          var cluster: Cluster = {
-            node: subNode,
-            markers: subNode.markers
-          }
+    for (let i = 0; i < sortedPairs.length; i++) {
+        sortedPairs[i].index = i;
+    }
 
+    for (let i = 0; i < sortedPairs.length; i++) {
+        let pair = sortedPairs[i];
+
+        if (pair === null) continue
+
+        sortedPairs[i] = null
+
+        //pair is the origin of this cluster
+
+        if (Clusterer.map && Clusterer.drawClusterOrigin) {
+          Clusterer.map.addMarkerFromGeoLocation(pair.marker.getLocation(), cross, true, null)
+        }
+
+        let cluster = Clusterer.getCluster(pair, sortedPairs)
+
+        if (cluster) //when the cluster only would have 1 marker ... dont build a cluster
           clusters.push(cluster)
+    }
 
-        } else {
+    return clusters
+  }
 
-          this.getClustersRec(subNode, clusters)
+    /**
+     * gets the cluster for the given pair
+     * @param pair the pair to start clustering (searching for markers in near)
+     * @param sortedPairs all marker pairs to search
+     * @returns {any} the cluster
+     */
+  private static getCluster(pair: MarkerPair, sortedPairs: MarkerPair[]) : Cluster {
 
+    var cluster: Cluster = {
+      //node: null,
+      center: null,
+      originMarker: pair.marker,
+      markers: [pair.marker]
+    }
+    //cluster.node = pair.node
+
+    for (let i = 0; i < sortedPairs.length; i++) {
+        let markerPair = sortedPairs[i];
+
+        if (markerPair) {
+
+          var distance = Clusterer.getDistance(pair, markerPair)
+
+          if (distance < Clusterer.maxDistanceForCluster) {
+            cluster.markers.push(markerPair.marker)
+            sortedPairs[i] = null //only add the marker to one cluster
+          }
         }
     }
 
+    if (cluster.markers.length > 1) {
 
+      let viewport = Clusterer.getViewPort(cluster.markers)
+      let centerX = viewport.topLeft.lng + ((viewport.bottomRight.lng - viewport.topLeft.lng) / 2)
+      let centerY = viewport.bottomRight.lat + ((viewport.topLeft.lat - viewport.bottomRight.lat) / 2)
+
+      cluster.center = {
+        lat: centerY,
+        lng: centerX
+      }
+
+      return cluster
+    }
+
+    return null
   }
 
+    /**
+     * gets the distance in px between two marker(pairs)
+     * @param p1 the first marker pair
+     * @param p2 the second marker pair
+     * @returns {number} the distance in px
+     */
+  private static getDistance(p1: MarkerPair, p2: MarkerPair) : number {
 
-  private getViewPort(markers: Marker[]) : ViewPort {
+    var dx = Math.abs(p1.x - p2.x)
+    var dy = Math.abs(p1.y - p2.y)
+    var distance = Math.sqrt(
+      (dx * dx) +
+      (dy * dy)
+    )
+
+    return distance
+  }
+
+    /**
+     * gets the rectangular area with the list of markers (top left most & bottom right most)
+     * @param markers the markers
+     * @returns {{topLeft: {lat: number, lng: number}, bottomRight: {lat: number, lng: number}}} the rectangular area
+     */
+  static getViewPort(markers: Marker[]) : ViewPort {
 
     if (markers.length === 0) return
 
@@ -171,18 +255,17 @@ setTimeout(function() {
     return viewPort
   }
 
-
-  private createQuadTree(viewport: ViewPort, markers: Marker[], root: QuadTreeNode, maxDepth: number) {
+    /**
+     * creates a quadtree recursively until every marker has its own quadtree node
+     * @param viewport the start viewport
+     * @param markersPairs the markers to divide
+     * @param root the current quadtree root node
+     */
+  private static createQuadTree(viewport: ViewPort, markersPairs: MarkerPair[], root: QuadTreeNode) {
 
     var self = this
 
-    if (root.level > maxDepth) {
-      console.log("hit")
-      return
-    }
-
-    //root.markers = []
-
+    root.markers = []
 
     var child0 : QuadTreeNode = { //top left
       parentNode: root,
@@ -226,40 +309,39 @@ setTimeout(function() {
     var centerX = viewport.topLeft.lng + ((viewport.bottomRight.lng - viewport.topLeft.lng) / 2)
     var centerY = viewport.bottomRight.lat + ((viewport.topLeft.lat - viewport.bottomRight.lat) / 2)
 
-    console.log("lng: " + centerX + " lat: " + centerY)
-    if (drawrCrosses)
-      map.addMarkerFromGeoLocation({lat: centerY, lng: centerX}, cross, true, null)
+    //console.log("lng: " + centerX + " lat: " + centerY)
 
-    for (let i = 0; i < markers.length; i++) {
-        let marker = markers[i];
+    //if (drawrCrosses) {
+      //var mk = map.addMarkerFromGeoLocation({lat: centerY, lng: centerX}, cross, true, null)
+      //var point = mk.getXY()
+      //console.log(point)
+    //}
 
-        let location = marker.getLocation()
+
+    for (let i = 0; i < markersPairs.length; i++) {
+        let pair = markersPairs[i];
+
+        let location = pair.marker.getLocation()
 
         if (location.lat > centerY) { //top side
           if (location.lng <= centerX) { //left side
-              child0.markers.push(marker)
+              child0.markers.push(pair)
           } else { //location.lng > centerY //right side
-              child0.markers.push(marker)
+              child0.markers.push(pair)
           }
 
         } else { //location.lat <= centerX //bottom side
           if (location.lng <= centerX) { //left side
-              child2.markers.push(marker)
+              child2.markers.push(pair)
           } else { //location.lng > centerY //right side
-            child3.markers.push(marker)
+            child3.markers.push(pair)
           }
         }
     }
 
     //next level
-
-if (drawSector)
-    for (let i = 0; i <child0.markers.length; i++) {
-      let marker = child0.markers[i];
-      marker.setIconPath(img0)
-    }
-
-    if (child0.markers.length > maxMarkers) { //top left
+      //we want 1 marker in 1 node so keep goging until its 1
+    if (child0.markers.length > 1) { //top left
 
       let subViewPort: ViewPort = {
         topLeft: viewport.topLeft,
@@ -269,19 +351,16 @@ if (drawSector)
         }
       }
 
+      self.createQuadTree(subViewPort, child0.markers, child0)
 
-      //setTimeout(function() {
-          self.createQuadTree(subViewPort, child0.markers, child0, maxDepth)
-      //}, delay)
+    } else if (child0.markers.length == 1) {
+      //now we only have 1 marker so stop recursion
+      //and add the related node to the marker
+      child0.markers[0].node = child0
     }
 
-if (drawSector)
-    for (let i = 0; i <child1.markers.length; i++) {
-      let marker = child1.markers[i];
-      marker.setIconPath(img1)
-    }
-
-    if (child1.markers.length > maxMarkers) { //top right
+      //we want 1 marker in 1 node so keep goging until its 1
+    if (child1.markers.length > 1) { //top right
 
       let subViewPort: ViewPort = {
         topLeft: {
@@ -294,18 +373,17 @@ if (drawSector)
         }
       }
 
-      //setTimeout(function() {
-          self.createQuadTree(subViewPort, child1.markers, child1, maxDepth)
-      //}, delay)
+      self.createQuadTree(subViewPort, child1.markers, child1)
+
+    } else if (child1.markers.length == 1) {
+      //now we only have 1 marker so stop recursion
+      //and add the related node to the marker
+      child1.markers[0].node = child1
     }
 
-if (drawSector)
-    for (let i = 0; i <child2.markers.length; i++) {
-      let marker = child2.markers[i];
-      marker.setIconPath(img2)
-    }
 
-    if (child2.markers.length > maxMarkers) { //bottom left
+      //we want 1 marker in 1 node so keep goging until its 1
+    if (child2.markers.length > 1) { //bottom left
 
       let subViewPort: ViewPort = {
         topLeft: {
@@ -318,21 +396,16 @@ if (drawSector)
         }
       }
 
-      //setTimeout(function() {
-          self.createQuadTree(subViewPort, child2.markers, child2, maxDepth)
-      //}, delay)
+      self.createQuadTree(subViewPort, child2.markers, child2)
 
-
+    } else if (child2.markers.length == 1) {
+      //now we only have 1 marker so stop recursion
+      //and add the related node to the marker
+      child2.markers[0].node = child2
     }
 
-
-if (drawSector)
-    for (let i = 0; i <child3.markers.length; i++) {
-      let marker = child3.markers[i];
-      marker.setIconPath(img3)
-    }
-
-    if (child3.markers.length >  maxMarkers) { //bottom right
+    //we want 1 marker in 1 node so keep goging until its 1
+    if (child3.markers.length >  1) { //bottom right
 
       let subViewPort: ViewPort = {
         topLeft: {
@@ -342,12 +415,12 @@ if (drawSector)
         bottomRight: viewport.bottomRight
       }
 
-      //map.addMarkerFromGeoLocation(subViewPort.topLeft, dot, true, null)
-      //map.addMarkerFromGeoLocation(subViewPort.bottomRight, dot2, true, null)
+      self.createQuadTree(subViewPort, child3.markers, child3)
 
-      //setTimeout(function() {
-          self.createQuadTree(subViewPort, child3.markers, child2, maxDepth)
-      //}, delay)
+    } else if(child3.markers.length == 1) {
+      //now we only have 1 marker so stop recursion
+      //and add the related node to the marker
+      child3.markers[0].node = child3
     }
   }
 

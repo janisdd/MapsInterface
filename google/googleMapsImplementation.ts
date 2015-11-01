@@ -235,7 +235,7 @@ class GoogleMapsMap implements GeoMap {
             callback();
         }
             document.body.appendChild(script);
-            
+
 
   }
 
@@ -263,6 +263,7 @@ class GoogleMapsMap implements GeoMap {
     overlay.draw = function() {};
     overlay.setMap(this.map);
 
+    this.overlay = overlay
   }
 
   /**

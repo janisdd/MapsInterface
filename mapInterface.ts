@@ -1,4 +1,5 @@
 //autor janis dähne
+
 /*
 * represents a pair of x y coordinates
 */
@@ -17,7 +18,7 @@ interface Point {
 
 /**
  * a geo location
- */ 
+ */
 interface LatLng {
 
     /**
@@ -164,12 +165,12 @@ interface EventToken {
     /**
     * the event id for this event listener
     */
-    id: number,
+    id: number
 
     /**
     * the event name
     */
-    eventName: string;
+    eventName: string
 
     /**
     * null or some vendor specific token
@@ -179,7 +180,7 @@ interface EventToken {
     /**
     * the corresponding geo map
     */
-    map: GeoMap;
+    map: GeoMap
 }
 
 /**
