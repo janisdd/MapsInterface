@@ -399,7 +399,7 @@ class MapSelectionHelper {
    * enables (displays overlay) selection or disables selection hides the overlay
    * @param enableSelection true: enables (displays overlay) the selection or false: disables selection hides the overlay
    */
-  public static setSelectionMode(enableSelection: boolean) {
+  public static setInSelectionMode(enableSelection: boolean) {
     this.isSelectionModeEnabled = enableSelection
 
     if (this.isSelectionModeEnabled) {
@@ -407,6 +407,13 @@ class MapSelectionHelper {
     } else {
       this.selectionOverlayDiv.style.display = 'none'
     }
+  } 
+
+  /**
+  * @return {boolean} true: selection is possible/enabled, false: not
+  */
+  public static getInSelectionMode(): boolean {
+      return this.isSelectionModeEnabled
   }
 
 

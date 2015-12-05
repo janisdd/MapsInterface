@@ -97,6 +97,16 @@ map.pre_init(() => {
     console.log('selection started')
   })
 
+  window.addEventListener('keypress', (ev: KeyboardEvent) => {
+
+    let c = String.fromCharCode(ev.charCode)
+
+    let mode = MapSelectionHelper.getInSelectionMode()
+    if (c == 'S' && ev.shiftKey) {
+
+      MapSelectionHelper.setInSelectionMode(!mode)
+    }
+  })
 
   //MapSelectionHelper.enableMultiSelection(overlay,'h')
 
