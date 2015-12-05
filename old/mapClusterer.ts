@@ -1,12 +1,9 @@
 //autor janis dähne
-///<reference path="mapInterface.ts"/>
-
-//TODO this clusterer maybe only work for europe (lat, lng ...)
 
 /**
  * a cluster with markers
  */
-interface Cluster {
+interface _Cluster {
 
   /**
   * the center (half of the distance between the top left and bottom right marker)
@@ -24,7 +21,7 @@ interface Cluster {
 /**
  * a marker pair with a marker and a quadtree node
  */
-interface MarkerPair {
+interface _MarkerPair {
   marker: Marker
   x: number
   y: number
@@ -35,7 +32,7 @@ interface MarkerPair {
 /**
  * a rectangular area
  */
-interface ViewPort {
+interface _ViewPort {
     topLeft: LatLng
     bottomRight: LatLng
 }
@@ -43,7 +40,7 @@ interface ViewPort {
 /**
  * a quadtree node with 4 sub nodes a parent and markers and a level
  */
-interface QuadTreeNode {
+interface _QuadTreeNode {
   parentNode: QuadTreeNode
   markers: MarkerPair[]
   level: number
@@ -53,7 +50,7 @@ interface QuadTreeNode {
 /**
 * a common interface for an abstract clusterer
 */
-interface AbstractClusterer {
+interface _AbstractClusterer {
 
   /**
   * the inclusive min amount of markers to build a cluster
@@ -84,7 +81,7 @@ interface AbstractClusterer {
 /**
  * the clusterer
  */
-class Clusterer { //implements AbstractClusterer but as static members
+class _Clusterer { //implements AbstractClusterer but as static members
 
   /**
   * the inclusive min amount of markers to build a cluster
@@ -111,9 +108,6 @@ class Clusterer { //implements AbstractClusterer but as static members
    */
   static getClusters(markers: Marker[]) : Cluster[] {
 
-    if (markers.length === 0)
-      return []
-
     var viewPort = Clusterer.getViewPort(markers)
 
     var pairs : MarkerPair[] = []
@@ -136,9 +130,9 @@ class Clusterer { //implements AbstractClusterer but as static members
       subNodes: []
     }
 
-    Clusterer.createQuadTree(viewPort, pairs, root)
+    _Clusterer.createQuadTree(viewPort, pairs, root)
 
-    var clusters = Clusterer.getClustersFromPairs(pairs)
+    var clusters = _Clusterer.getClustersFromPairs(pairs)
 
     return clusters;
   }
@@ -175,7 +169,7 @@ class Clusterer { //implements AbstractClusterer but as static members
           //Clusterer.map.addMarkerFromGeoLocation(pair.marker.getLocation(), cross, true, null)
         //}
 
-        let cluster = Clusterer.getCluster(pair, sortedPairs)
+        let cluster = _Clusterer.getCluster(pair, sortedPairs)
 
         if (cluster) //when the cluster only would have 1 marker ... dont build a cluster
           clusters.push(cluster)
@@ -205,7 +199,7 @@ class Clusterer { //implements AbstractClusterer but as static members
 
         if (markerPair) {
 
-          var distance = Clusterer.getDistance(pair, markerPair)
+          var distance = _Clusterer.getDistance(pair, markerPair)
 
           if (distance <= Clusterer.maxDistanceForClusterInPx) {
             cluster.markers.push(markerPair.marker)
@@ -302,40 +296,6 @@ class Clusterer { //implements AbstractClusterer but as static members
     //clear all markers in the root quadtree node because we just wont 1 marker per quadtree node (stop recursion)
     root.markers = []
 
-    //check if the only markers left are on the same location!!
-
-    let firstMarker = markersPairs[0] //we always have more than 1 marker because we stop recursion when we only have 1 marker left
-    let firsrLocation = firstMarker.marker.getLocation()
-    let allEqual = true
-    for (let i = 1; i < markersPairs.length; i++) {
-
-      let location = markersPairs[i].marker.getLocation()
-
-      if (firsrLocation.lat !== location.lat || firsrLocation.lng !== location.lng) {
-        allEqual = false
-        break
-      }
-    }
-
-    if (allEqual) {
-
-      //add an extra quadtree node for every marker wit the same geo location
-      //so this is not a quadtree anymore but we dont care here...
-      for (let i = 0; i < markersPairs.length; i++) {
-          let pair = markersPairs[i];
-
-          let extraNode : QuadTreeNode = {
-            parentNode: root,
-            markers: [pair],
-            level: root.level + 1,
-            subNodes: []
-          }
-          pair.node = extraNode
-      }
-
-      return
-    }
-
     var child0 : QuadTreeNode = { //top left
       parentNode: root,
       markers: [],
@@ -370,7 +330,6 @@ class Clusterer { //implements AbstractClusterer but as static members
     root.subNodes[3] = child3
 
 
-
     //divide the viewport into 4 parts
     //for europe only!!
     //lng: longitude (laengengrad X) left: 0 - right: 100 %
@@ -387,9 +346,6 @@ class Clusterer { //implements AbstractClusterer but as static members
       //console.log(point)
     //}
 
-    // child 0 | child 1
-    // ------------------
-    // child 2 | child 3
 
     for (let i = 0; i < markersPairs.length; i++) {
         let pair = markersPairs[i];
@@ -400,7 +356,7 @@ class Clusterer { //implements AbstractClusterer but as static members
           if (location.lng <= centerX) { //left side
               child0.markers.push(pair)
           } else { //location.lng > centerY //right side
-              child1.markers.push(pair)
+              child0.markers.push(pair)
           }
 
         } else { //location.lat <= centerX //bottom side

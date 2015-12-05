@@ -1,5 +1,9 @@
 //autor janis dähne
 
+///<reference path="../mapInterface.ts"/>
+///<reference path="google.maps.d.ts"/>
+
+
 /*
 * some events a marker can listen for (many can also be used for the map too! e.g. mouse...)
 * see https://developers.google.com/maps/documentation/javascript/reference#Marker for all events
@@ -129,7 +133,7 @@ class GoogleMapsMarker implements Marker {
 
   /**
   * sets the visibility for this marker
-  * @param visible true: visible, false: not visible
+  * @param {boolean} visible true: visible, false: not visible
   */
   setVisibility(visible: boolean): void {
 
@@ -138,7 +142,7 @@ class GoogleMapsMarker implements Marker {
   }
 
   /**
-  * gets the current visibility of this marker (true: visible, false: not visible)
+  * @return {boolean} gets the current visibility of this marker (true: visible, false: not visible)
   */
   getVisibility(): boolean {
     return this.visibility;
@@ -193,7 +197,7 @@ class GoogleMapsMap implements GeoMap {
   /**
    * the google maps map
    */
-  private map: google.maps.Map = null;
+  public map: google.maps.Map = null;
 
   //private markers: GoogleMapsPair[] = [];
 
@@ -220,17 +224,21 @@ class GoogleMapsMap implements GeoMap {
    */
   pre_init(callback: () => void) {
 
-    callback();
+    //callback();
+    //return;
 
-    return;
+    if (window['googleMapsInitialize_$']) { //only include script once
+      callback();
+      return
+    }
 
     var script = document.createElement('script');
         script.type = 'text/javascript';
-        script.src = 'https://maps.googleapis.com/maps/api/js?v=3.exp&signed_in=true&libraries=drawing' +
-            '&signed_in=true&callback=googleMapsInitialize'; //we need a function googleMapsInitialize for the callback
+        script.src = 'https://maps.googleapis.com/maps/api/js?v=3.23&signed_in=true&libraries=drawing' + //exp
+            '&signed_in=true&callback=googleMapsInitialize_$'; //we need a function googleMapsInitialize for the callback
 
 
-        window['googleMapsInitialize'] = function () {
+        window['googleMapsInitialize_$'] = function () {
             console.log('inited')
             callback();
         }
@@ -283,10 +291,11 @@ class GoogleMapsMap implements GeoMap {
   }
 
   /**
-   * remove the map from the dom of the html document
+   * remove the map from the dom of the html document (löscht auch alle gesetzten styles)
    */
   deleteMap(): void {
       this.parentElement.innerHTML = "";
+      this.parentElement.removeAttribute("style")
       this.map = null;
       this.markers = {};
       //this.eventTokens = [];
@@ -506,6 +515,7 @@ class GoogleMapsMap implements GeoMap {
       return null;
 
       _marker.delete();
+      delete this.markers["_" + _marker.id]
 
       return _marker;
   }
@@ -540,7 +550,7 @@ class GoogleMapsMap implements GeoMap {
   /*
   * gets the x y coodinates of the geo location on this map (relative the the drawing surface)
   */
-  getXYFromGeoLocation(location: LatLng): Point {
+  public getXYFromGeoLocation(location: LatLng): Point {
 
     var temp = this.overlay.getProjection().fromLatLngToContainerPixel(
       new google.maps.LatLng(location.lat, location.lng)
@@ -549,6 +559,22 @@ class GoogleMapsMap implements GeoMap {
     return {x: temp.x, y: temp.y};
   }
 
+//from ttp://stackoverflow.com/questions/3723083/how-to-use-frompointtolatlng-on-google-maps-v3
+    public getGeoLocationFromXY(point: Point) : LatLng {
+      var ne = this.map.getBounds().getNorthEast();
+      var sw = this.map.getBounds().getSouthWest();
+      var projection = this.map.getProjection();
+      var topRight = projection.fromLatLngToPoint(ne);
+      var bottomLeft = projection.fromLatLngToPoint(sw);
+
+      //var scale = Math.pow(2, map.getZoom());
+      var scale = 1 << map.getZoom();
+      var newLatlng = projection.fromPointToLatLng(new google.maps.Point(point.x / scale + bottomLeft.x, point.y / scale + topRight.y));
+      return {
+        lat: newLatlng.lat(),
+        lng: newLatlng.lng()
+      }
+    }
 
 
   //----------------helper functions-----------------

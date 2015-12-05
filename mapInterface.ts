@@ -330,6 +330,12 @@ interface GeoMap {
     */
     getXYFromGeoLocation(location: LatLng): Point;
 
+    /**
+    * gets the geo location from the given point
+    * @param point the x,y pair to get the geo location from
+    * @return the geo location for the point
+    */
+    getGeoLocationFromXY(point: Point) : LatLng
     /*
     * returns all markers on this map
     */

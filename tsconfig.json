@@ -9,7 +9,7 @@
         "emitDecoratorMetadata": true,
         "declaration": false,
         "noImplicitAny": false,
-        "removeComments": true,
+        "removeComments": false,
         "noLib": false,
         "preserveConstEnums": true,
         "suppressImplicitAnyIndexErrors": true
@@ -22,9 +22,14 @@
     "files": [
         "google/google.maps.d.ts",
         "google/googleMapsImplementation.ts",
-        "googleTest.ts",
+        "googleClusterTest.ts",
         "mapClusterer.ts",
-        "mapInterface.ts"
+        "mapInterface.ts",
+        "mapSelectionHelper.ts",
+        "old/mapClusterer.ts"
     ],
-    "exclude": []
+    "exclude": [],
+    "atom": {
+        "rewriteTsconfig": true
+    }
 }

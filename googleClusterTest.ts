@@ -1,6 +1,11 @@
 /// <reference path="./mapClusterer.ts"/>
 //autor janis dähne
 //zuletzt bearbeitet von janis dähne: clusterer test hinzugefügt
+//zuletzt bearbeitet von janis dähne: markieren von mehreren markern hinzugefügt
+
+//'http://cdn.leafletjs.com/leaflet-0.5/images/marker-icon.png'
+
+var dot = "Images/dot.png"
 
 var markers: Array<GoogleMapsMarker> = [];
 
@@ -10,6 +15,7 @@ var clusterer = new Clusterer()
 var map : GoogleMapsMap = new GoogleMapsMap();
 
 var marker11: GoogleMapsMarker
+
 
 map.pre_init(() => {
 
@@ -66,8 +72,123 @@ map.pre_init(() => {
      map.addMarkerListener(GoogleMapsEventNames.mouseover, marker1, (marker: Marker) => {
         this.setTextGoogle("lat: " + marker.getLocation().lat + " - lng: " + marker.getLocation().lng);
      });
-
   }
+
+
+
+
+  //set up markieren
+
+  let overlay = <HTMLDivElement>document.getElementById('map-canvas-overlay')
+
+
+  MapSelectionHelper.Init(this.map, overlay, (selectedMarkers: Marker[], notSelectedMarkers: Marker[]) => {
+
+    for (let i = 0; i < selectedMarkers.length; i++) {
+      selectedMarkers[i].setIconPath('http://cdn.leafletjs.com/leaflet-0.5/images/marker-icon.png');
+    }
+
+    for (let j = 0; j < notSelectedMarkers.length; j++) {
+        notSelectedMarkers[j].setIconPath('');
+    }
+  }, () => {
+    console.log('selection end!')
+  }, () => {
+    console.log('selection started')
+  })
+
+
+  //MapSelectionHelper.enableMultiSelection(overlay,'h')
+
+/*
+  overlay.addEventListener('mousemove', (ev: MouseEvent) => {
+
+    if (markStart) {
+      let indicator = document.getElementById('indicatorDiv')
+
+      indicator.style.width = (ev.x - 20 - sX) + "px"
+      indicator.style.height = (ev.y - sY - 20) + "px"
+
+      let location = map.getGeoLocationFromXY({x: ev.x - 20, y: ev.y})
+
+      let topLeft = {
+        lat: Math.max(location.lat, markStart.lat),
+        lng:  Math.min(location.lng, markStart.lng)
+      }
+      let bottomRight = {
+        lat: Math.min(location.lat, markStart.lat),
+        lng: Math.max(location.lng, markStart.lng),
+      }
+
+      let allmarkers = map.getAllMarkers()
+      let markedMarkers = []
+
+      for (let i = 0; i < allmarkers.length; i++) {
+          let m = allmarkers[i];
+
+          if (m.getLocation().lat < topLeft.lat && bottomRight.lat < m.getLocation().lat) {
+
+            if (m.getLocation().lng < bottomRight.lng && topLeft.lng < m.getLocation().lng) {
+              markedMarkers.push(m)
+              m.setIconPath('http://cdn.leafletjs.com/leaflet-0.5/images/marker-icon.png')
+              continue
+            }
+          }
+          m.setIconPath('')
+      }
+
+
+    }
+
+  })
+
+  overlay.addEventListener('click', (ev: MouseEvent) => {
+
+    let location = map.getGeoLocationFromXY({x: ev.x - 20, y: ev.y})
+
+    if (!markStart) {
+      markStart = location
+
+      let indicator = document.getElementById('indicatorDiv')
+      sX = (ev.x - 20)
+      sY = ev.y
+      indicator.style.left = sX + "px"
+      indicator.style.top = sY + "px"
+
+    } else {
+
+      //get top left and bottom right point -> check all markers for intersection
+
+      let topLeft = {
+        lat: Math.max(location.lat, markStart.lat),
+        lng:  Math.min(location.lng, markStart.lng)
+      }
+      let bottomRight = {
+        lat: Math.min(location.lat, markStart.lat),
+        lng: Math.max(location.lng, markStart.lng),
+      }
+
+      let allmarkers = map.getAllMarkers()
+      let markedMarkers = []
+
+      for (let i = 0; i < allmarkers.length; i++) {
+          let m = allmarkers[i];
+
+          if (m.getLocation().lat < topLeft.lat && bottomRight.lat < m.getLocation().lat) {
+
+            if (m.getLocation().lng < bottomRight.lng && topLeft.lng < m.getLocation().lng) {
+              markedMarkers.push(m)
+              m.setIconPath('http://cdn.leafletjs.com/leaflet-0.5/images/marker-icon.png')
+              continue
+            }
+          }
+          m.setIconPath('')
+      }
+      markStart = null
+    }
+  })
+
+*/
 });
 
 
@@ -78,7 +199,6 @@ map.pre_init(() => {
 
 function getCluster() {
 
-  Clusterer.map = map
   var clusters = Clusterer.getClusters(markers)
 
   test(clusters)
@@ -152,6 +272,28 @@ function test(clusters: Cluster[]) {
           }
       }
     }, delay)
-
-
   }
+
+
+var markStart: LatLng
+var sX: number
+var sY: number
+
+
+function markiere() {
+
+  //let overlay = document.getElementById('map-canvas-overlay')
+  //overlay.style.display = 'inline'
+
+  MapSelectionHelper.setSelectionMode(true)
+
+}
+
+function markiereNichtMehr() {
+
+  //let overlay = document.getElementById('map-canvas-overlay')
+  //overlay.style.display = 'none'
+
+  MapSelectionHelper.setSelectionMode(false)
+
+}
